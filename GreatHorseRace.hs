@@ -1,6 +1,7 @@
-{- Great Horse Race in Haskell, using WX. -}
+-- Great Horse Race in Haskell, using WX.
 
--- TODO: Switching to standard from full screen mystery goes off screen 
+-- This program was a bit of an exercise in learning wxHaskell, so
+-- don't look to it as a model of a wxHaskell program ...
 
 module Main where
 
@@ -296,16 +297,46 @@ data Actions = Actions {
     a_restart     :: IO ()
 }
 
+-- TODO: Make this do something - it's currently just a stub
+--
+createPrefDlg :: Frame ()
+	      -> Pref
+              -> IO (IO ())
+createPrefDlg f p = do
+    d <- dialog f []
+
+    okB <- button d [ text := "OK" ]
+    cancelB <- button d [ text := "Cancel" ]
+
+    set d [ layout := column 20 $ map widget [ okB, cancelB ] ]
+
+    let stopper = \stop -> do set okB [ on command := stop $ Just () ]
+                              set cancelB [ on command := stop Nothing ]
+                   
+    let showDlg = do res <- showModal d stopper
+                     case res of Just () -> putStrLn "ok"
+                                 Nothing -> putStrLn "cancel"
+
+    return showDlg
+
 createGui :: Frame ()
           -> Pref
           -> State 
           -> Actions
           -> IO ()
 createGui f p s a = do
+
+    -- create preferences dialog
+    showPrefDlg <- createPrefDlg f p
          
     -- create file menu  
     file   <- menuPane      [text := "&File"]
     quit   <- menuQuit file [help := "Quit the demo", on command := close f]
+
+    -- create edit menu  
+    edit   <- menuPane      [text := "&Edit"]
+    prefs  <- menuItem edit [text := "&Preferences", 
+                             on command := showPrefDlg ]
 
     -- create Help menu
     hlp    <- menuHelp      []
@@ -316,7 +347,7 @@ createGui f p s a = do
 
     -- set the statusbar and menubar
     set f [ --statusBar := [status],
-            menuBar   := [file,hlp]
+            menuBar   := [file, {-TODO edit,-} hlp]
             -- put the menu event handler for an about box on the frame.
           ,on (menu about) := infoDialog f "The Great Horse Race v0.6 "
             ( concat [
@@ -366,7 +397,6 @@ createGui f p s a = do
     let doLayout = do
         horses <- getVar (s_horses s)
         dice <- getVar (s_dice s)
-        putStrLn $ "doing layout for " ++ show (length horses) ++ " horses"
         set f [ layout := static $ grid 10 10 $
                 [ [ empty,
                     hglue,
