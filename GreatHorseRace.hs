@@ -1,4 +1,6 @@
 -- Great Horse Race in Haskell, using WX.
+-- Copyright (c) 2005 Simon J. Guest.
+-- Licensed under the GNU General Public License.
 
 -- This program was a bit of an exercise in learning wxHaskell, so
 -- don't look to it as a model of a wxHaskell program ...
