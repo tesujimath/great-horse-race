@@ -1,0 +1,5 @@
+--:set -package FranTk
+--:set -package text
+--:set -fallow-overlapping-instances
+:set -package wxcore
+:set -package wx
