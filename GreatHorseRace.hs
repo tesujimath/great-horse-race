@@ -1,6 +1,6 @@
 {- Great Horse Race in Haskell, using WX. -}
 
--- TODO: just widget sizing & colours, I think.
+-- TODO: Switching to standard from full screen mystery goes off screen 
 
 module Main where
 
@@ -66,18 +66,21 @@ configureWidgets widgetMaker activeV spareV nReq = do
     let nActive = length active
         nSpare = length spare
 
-    -- create as many new widgets as we need (maybe none)
-    new <- sequence $ replicate (nReq - nActive - nSpare) widgetMaker
-    let active' = take nReq (active ++ spare ++ new)
-        spare'  = drop nReq (active ++ spare ++ new)
+    if nReq == nActive then
+        return ()
+                       else do
+        -- create as many new widgets as we need (maybe none)
+        new <- sequence $ replicate (nReq - nActive - nSpare) widgetMaker
+        let active' = take nReq (active ++ spare ++ new)
+            spare'  = drop nReq (active ++ spare ++ new)
 
-    -- show/hide them
-    sequence_ $ map (\w -> setVisibility w False) spare'
-    sequence_ $ map (\w -> setVisibility w True) active'
+        -- show/hide them
+        sequence_ $ map (\w -> setVisibility w False) spare'
+        sequence_ $ map (\w -> setVisibility w True) active'
 
-    -- update
-    setVar spareV spare'
-    setVar activeV active'
+        -- update
+        setVar spareV spare'
+        setVar activeV active'
 
 
 ------------------------------------------------------------------------------
@@ -166,6 +169,8 @@ likelyRolls (Roller n w _) finish =
     finish * ((sum w) `pow` n) `div` (maxways n w)
     where pow x y = foldl (*) 1 (replicate y x)
 
+nDice (Roller n _ _) = n
+
 ------------------------------------------------------------------------------
 --
 -- a Horse
@@ -190,9 +195,6 @@ colArray = listArray (0, nCol - 1) colList
 
 hcol n = colArray ! (n `mod` nCol)
 
--- TODO remove this bodge - set width correctly
-showLocation x = reverse $ take 4 $ reverse $ "    " ++ show x
-
 mkHorse :: Window a
         -> OVar Int
         -> OVar Int
@@ -207,14 +209,14 @@ mkHorse parentW finishV frontV = do
         finish <- getVar finishV
         let viewS = rectSize view
             (viewW, viewH) = (sizeW viewS, sizeH viewS)
-            horseH = viewH `div` 3
+            horseH = viewH * 3 `div` 4
             horseW = horseH * 2 
 
         set dc [ brushColor := hcol number ]
 
         drawRect dc 
                     (rect (point ((viewW - horseW) * location `div` finish)
-                                        (viewH `div` 3))
+                                 ((viewH - horseH) `div` 2))
                           (sz horseW horseH))
                     []
 
@@ -225,13 +227,13 @@ mkHorse parentW finishV frontV = do
                                  visible := False ]
     graphicC <- window parentW [ on paint := drawHorse numberV locationV finishV,
                                  visible := False ]
-    locationC <- staticText parentW [ text := showLocation 0,
+    locationC <- staticText parentW [ text := show 0,
                                       fontSize := 16,
                                       fontWeight := WeightBold,
                                       visible := False ]
 
     attachVar numberV (\v -> set advanceC [ text := show v ])
-    attachVar locationV (\v -> do set locationC [ text := showLocation v]
+    attachVar locationV (\v -> do set locationC [ text := show v]
                                   refresh graphicC)
     attachVar finishV (\v -> refresh graphicC)
     return $ Horse (HorseVars numberV locationV frontV)
@@ -256,9 +258,9 @@ restartHorse (Horse (HorseVars _ locationV _) _) = setVar locationV 0
 
 horseLayout :: Horse -> [Layout]
 horseLayout (Horse _ (HorseWidgets advanceC graphicC locationC)) =
-    [ vfill $ widget advanceC,
-       fill $ widget graphicC,
-      vfill $ widget locationC ]
+    [ valignCenter $ widget advanceC,
+      valignCenter $ hfill $ widget graphicC,
+      valignCenter $ widget locationC ]
 
 instance Visibility Horse where
     setVisibility (Horse _ (HorseWidgets advanceC graphicC locationC)) v = do
@@ -356,34 +358,31 @@ createGui f p s a = do
                                        (n,_):_ -> setVar (p_finish p) n ]
     attachVar (p_finish p) (\v -> set finishC [ text := show v ])
 
-    countC <- staticText cp [ text := showLocation 0,
-                              fontSize := 16,
-                              fontWeight := WeightBold ]
-    attachVar (s_count s) (\v -> set countC [ text := showLocation v ])
+    countC <- staticText f [ text := show 0,
+                             fontSize := 16,
+                             fontWeight := WeightBold ]
+    attachVar (s_count s) (\v -> set countC [ text := show v ])
 
     let doLayout = do
         horses <- getVar (s_horses s)
         dice <- getVar (s_dice s)
-        set f [ layout := column 20
-                   [ stretch $ horsesLayout horses,
-                     hstretch $ diceLayout dice,
-                     hstretch $ container cp $ 
-                     margin 10 $ row 20 $ 
-                     map widget buttons ++ [(widget finishC), 
-                                            hglue,
-                                            (widget countC)]
-                   ]
-                 ]
+        putStrLn $ "doing layout for " ++ show (length horses) ++ " horses"
+        set f [ layout := static $ grid 10 10 $
+                [ [ empty,
+                    hglue,
+                    space 60 0 ] ]
+                ++
+                (map horseLayout horses)
+                ++ 
+                [ [ empty,
+                    hstretch $ diceLayout dice,
+                    empty ],
+                  [  empty,
+                     container cp $ row 20 $ 
+                     map widget buttons ++ [(widget finishC), hglue],
+                     (widget countC) ] ]
+              ]
         where
-            horsesLayout :: [Horse] -> Layout
-            horsesLayout horses =
-                if null horses then empty
-                               else grid 10 10 $
-                                    [ empty,
-                                      hglue,
-                                      space 50 0 ] :
-                                    (map horseLayout horses)
-
             diceLayout :: [Die] -> Layout
             diceLayout dice =
                 if null dice then empty
@@ -461,7 +460,8 @@ ghr = do
     let start d = do roller <- getVar rollerV
                      finish <- getVar finishV
                      let n = likelyRolls roller finish
-                     set ticker [ interval := d `div` n,
+                         t = max 2 (d `div` n) -- 1 is too short
+                     set ticker [ interval := t,
                                   enabled := True ]
 
         stop = set ticker [ enabled := False ]
@@ -492,7 +492,8 @@ ghr = do
     --
     -- actions in response to state updates
     -- 
-    attachVar rollerV (\r -> configureHorses (nOutcomes r) (minOutcome r))
+    attachVar rollerV (\r -> do configureHorses (nOutcomes r) (minOutcome r)
+                                configureDice (nDice r))
 
     roll
     restart
