@@ -353,7 +353,7 @@ createGui f p s a = do
             -- put the menu event handler for an about box on the frame.
           ,on (menu about) := infoDialog f "The Great Horse Race v0.6 "
             ( concat [
-                    "Copyright (c) 2004 Simon J. Guest\n\n\
+                    "Copyright (c) 2005 Simon J. Guest\n\n\
 \To change the race length, you type in a new number and press return.\n\n\
 \The standard race is run with two fair 6-sided dice.\n\n\
 \The mystery race is run with the following probabilities :-\n\
