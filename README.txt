@@ -2,7 +2,10 @@ The Great Horse Race, copyright (c) 2005 Simon J. Guest.
 
 See license.txt for the license.
 
-GreatHorseRace.hs is the source code, in the wonderful Haskell language.
+GreatHorseRace.hs is the source code, in the Haskell programming
+language.  In case it's new to you, Haskell is a rather wonderful
+programming language, which you can learn a little more about here :-
+http://www.haskell.org/tutorial
 
 To build it from source, you need :-
 
