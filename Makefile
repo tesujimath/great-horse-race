@@ -9,7 +9,7 @@ EXES =  GreatHorseRace
 all: GreatHorseRace
 
 GreatHorseRace: GreatHorseRace.hs
-	$(GHC) --make -O -package wx -o $@ $<
+	$(GHC) --make -O -package wx -o $@ -optl-mwindows $<
 
 clean:
 	$(RM) *.o *.hi *.exe $(EXES)
