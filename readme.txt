@@ -1,4 +1,4 @@
-The Great Horse Race, copyright (c) 2005 Simon J. Guest.
+The Great Horse Race, copyright (c) 2005-2023 Simon J. Guest.
 See license.txt for the license.
 
 
@@ -38,8 +38,5 @@ Linux is my preferred development platform, and for some reason, the
 program runs faster under Linux.  (Races of length 1000 are a little
 slow under Windows;  perhaps you should switch to Linux ;-)
 
-
-If you like this program, feel free to send me an email at
-simon@guests.plus.com. 
 
 sjg 11/1/05
